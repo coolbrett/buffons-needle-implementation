@@ -1,11 +1,12 @@
 use std::thread;
-use std::sync::mpsc::{channel, Receiver, Sender}; //idk if we need this 
+use std::sync::mpsc::channel;//idk if we need this 
 use threadpool::ThreadPool; 
 use std::io::{stdin, stdout, Write}; // had to import 'Write' to get flush() working 
 
 
+
 //remove below derive before submitting
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone,Copy)]
 struct Experiment {
     length: f64,
     distance: f64,
@@ -44,7 +45,7 @@ impl Experiment {
 
         stdin().read_line(&mut n_buffer).expect("Failed to read user input");
 
-        let p_needles = d_buffer.trim().parse::<i64>().expect("Failed to parse input");
+        let p_needles = n_buffer.trim().parse::<i64>().expect("Failed to parse input");
 
         // Gets the number of threads to use
         print!("Enter the number of threads to use > ");
@@ -64,15 +65,49 @@ impl Experiment {
     }
 }
 
-// fn create_threadpool(Experiment exp) {
+fn create_threadpool(exp : Experiment) {
+    // We may not need to clone the object here 
+    let cloned = exp.clone();
+    // println!("Length: {}",cloned.length);
+    // println!("Distance: {}",cloned.distance);
+    // println!("Threads: {}",cloned.threads);
+    // println!("Needles: {}",cloned.needles);
+    let pool = ThreadPool::new(cloned.threads as usize);
 
-// }
+    let (sender, reciever) = channel();
+    for _ in 0..cloned.needles {
+        let cloned_sender = sender.clone();
+        pool.execute(move|| {
+        //println!("I ({:?}) am working on a task: ", thread::current().id());
+        cloned_sender.send(exp.clone().distance).expect("");
+
+    });
+    }
+    drop(sender);
+
+    // This is where the main thread gets acces to the data 
+    for element in reciever {
+        println!("{}", element);
+    }
+}
+
+fn calculate_pi(exp : Experiment) {
+
+}
+
+fn get_drop_point() {
+
+}
+
+fn get_angle() {
+    
+}
+
 
 ///Main function for our program
 fn main() {
     println!("Buffon's Needle\n");
-
+    
     let new_exp = Experiment::new();
-    let exp_clone = new_exp.clone();
-    println!("This is the cloned needle len: {} ", exp_clone.distance)
+    create_threadpool(new_exp);
 }
