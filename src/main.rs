@@ -1,7 +1,8 @@
 use std::thread;
 use std::sync::mpsc::channel;//idk if we need this 
 use threadpool::ThreadPool; 
-use std::io::{stdin, stdout, Write}; // had to import 'Write' to get flush() working 
+use std::io::{stdin, stdout, Write}; // had to import 'Write' to get flush() working
+use rand::{thread_rng, Rng};
 
 
 
@@ -63,6 +64,34 @@ impl Experiment {
         }
 
     }
+
+    ///Toss needles and check hit count
+    ///
+    /// # Returns
+    /// * integer representing the amount of hits
+    pub fn toss_needles(&self) -> i64{
+        let mut count: i64 = 0;
+        println!("inside toss_needles()");
+        let mut rng = rand::thread_rng();
+
+        for _ in 0..self.needles {
+            let angle: f64 = rng.gen::<f64>() * 180.0.to_radians();
+            let position: f64 = self.distance * rng.gen::<f64>();
+
+            if (position + length * angle.sin() / 2.0 >= self.distance)
+                && (position - length * angle.sin() / 2.0 <= self.distance)
+                || (position + length * angle.sin() / 2.0 >= 0.0)
+                && (position - length * angle.sin() / 2.0 <= 0.0) {
+                count += 1;
+            }
+        }
+        println!("toss_needles() is done");
+        return count;
+    }
+}
+
+fn check_needle(){
+
 }
 
 fn create_threadpool(exp : Experiment) {
@@ -74,7 +103,7 @@ fn create_threadpool(exp : Experiment) {
     // println!("Needles: {}",cloned.needles);
     let pool = ThreadPool::new(cloned.threads as usize);
 
-    let (sender, reciever) = channel();
+    let (sender, receiver) = channel();
     for _ in 0..cloned.needles {
         let cloned_sender = sender.clone();
         pool.execute(move|| {
