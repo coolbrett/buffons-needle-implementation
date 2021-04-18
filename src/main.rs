@@ -69,8 +69,9 @@ impl Experiment {
     ///
     /// # Returns
     /// * integer representing the amount of hits
-    pub fn toss_needles(&self) -> i64{
-        let mut count: i64 = 0;
+    pub fn toss_needles(&self) -> f64{
+        // count the number of hits
+        let mut count: f64 = 0.0;
         println!("inside toss_needles()");
         let mut rng = rand::thread_rng();
 
@@ -78,11 +79,11 @@ impl Experiment {
             let angle: f64 = rng.gen::<f64>() * 180.0_f64.to_radians();
             let position: f64 = self.distance * rng.gen::<f64>();
 
-            if (position + self.length * angle.sin() / 2.0 >= self.distance)
-                && (position - self.length * angle.sin() / 2.0 <= self.distance)
-                || (position + self.length * angle.sin() / 2.0 >= 0.0)
-                && (position - self.length * angle.sin() / 2.0 <= 0.0) {
-                count += 1;
+            if ( 0.5 * (position + self.length * angle.sin()) >= self.distance)
+                && (0.5 * (position - self.length * angle.sin()) <= self.distance)
+                || (0.5 * (position + self.length * angle.sin()) >= 0.0)
+                && ( 0.5 * (position - self.length * angle.sin()) <= 0.0) {
+                count += 1.0;
             }
         }
         println!("toss_needles() is done");
@@ -90,9 +91,6 @@ impl Experiment {
     }
 }
 
-fn check_needle(){
-
-}
 
 fn create_threadpool(exp : Experiment) {
     // We may not need to clone the object here 
@@ -120,22 +118,19 @@ fn create_threadpool(exp : Experiment) {
     }
 }
 
-fn calculate_pi(exp : Experiment) {
-
-}
-
-fn get_drop_point() {
-
-}
-
-fn get_angle() {
-    
-}
-
-
 ///Main function for our program
 fn main() {
     println!("Buffon's Needle\n");
     let new_exp = Experiment::new();
-    create_threadpool(new_exp);
+
+    // if main is too large create a calc_pi() function
+    let hits  = new_exp.toss_needles();
+
+    let misses = new_exp.needles as f64 - hits; 
+    let pi = (2.0 * new_exp.length * (hits + misses)) / (new_exp.distance * hits);
+
+    println!("Number of hits: {}", hits);
+    println!("Number of misses: {}", misses);
+    println!("This is PI: {}", pi);
+    // Print a usage message if the length is greater that distance apart
 }
