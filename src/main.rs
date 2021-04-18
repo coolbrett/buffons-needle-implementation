@@ -75,7 +75,7 @@ impl Experiment {
         let mut rng = rand::thread_rng();
 
         for _ in 0..self.needles {
-            let angle: f64 = rng.gen::<f64>() * 180.0.to_radians();
+            let angle: f64 = rng.gen::<f64>() * 180.0_f64.to_radians();
             let position: f64 = self.distance * rng.gen::<f64>();
 
             if (position + self.length * angle.sin() / 2.0 >= self.distance)
@@ -115,7 +115,7 @@ fn create_threadpool(exp : Experiment) {
     drop(sender);
 
     // This is where the main thread gets acces to the data 
-    for element in reciever {
+    for element in receiver {
         println!("{}", element);
     }
 }
