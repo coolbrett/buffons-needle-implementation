@@ -78,10 +78,10 @@ impl Experiment {
             let angle: f64 = rng.gen::<f64>() * 180.0.to_radians();
             let position: f64 = self.distance * rng.gen::<f64>();
 
-            if (position + length * angle.sin() / 2.0 >= self.distance)
-                && (position - length * angle.sin() / 2.0 <= self.distance)
-                || (position + length * angle.sin() / 2.0 >= 0.0)
-                && (position - length * angle.sin() / 2.0 <= 0.0) {
+            if (position + self.length * angle.sin() / 2.0 >= self.distance)
+                && (position - self.length * angle.sin() / 2.0 <= self.distance)
+                || (position + self.length * angle.sin() / 2.0 >= 0.0)
+                && (position - self.length * angle.sin() / 2.0 <= 0.0) {
                 count += 1;
             }
         }
@@ -136,7 +136,6 @@ fn get_angle() {
 ///Main function for our program
 fn main() {
     println!("Buffon's Needle\n");
-    
     let new_exp = Experiment::new();
     create_threadpool(new_exp);
 }
