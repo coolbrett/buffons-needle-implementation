@@ -11,8 +11,8 @@ use rand::{thread_rng, Rng};
 struct Experiment {
     length: f64,
     distance: f64,
-    needles: i64,
-    threads: i64
+    needles: f64,
+    threads: f64
 }
 
 impl Experiment {
@@ -46,7 +46,7 @@ impl Experiment {
 
         stdin().read_line(&mut n_buffer).expect("Failed to read user input");
 
-        let p_needles = n_buffer.trim().parse::<i64>().expect("Failed to parse input");
+        let p_needles = n_buffer.trim().parse::<f64>().expect("Failed to parse input");
 
         // Gets the number of threads to use
         print!("Enter the number of threads to use > ");
@@ -54,7 +54,7 @@ impl Experiment {
 
         stdin().read_line(&mut t_buffer).expect("Failed to read user input");
 
-        let p_threads = t_buffer.trim().parse::<i64>().expect("Failed to parse input");
+        let p_threads = t_buffer.trim().parse::<f64>().expect("Failed to parse input");
 
         Experiment {
             length : p_length,
@@ -63,6 +63,10 @@ impl Experiment {
             threads : p_threads
         }
 
+    }
+
+    pub fn set_needles(mut self, value : f64) {
+        self.needles = value; 
     }
 
     ///Toss needles and check hit count
@@ -75,7 +79,7 @@ impl Experiment {
         println!("inside toss_needles()");
         let mut rng = rand::thread_rng();
 
-        for _ in 0..self.needles {
+        for _ in 0..self.needles as i64{
             let angle: f64 = rng.gen::<f64>() * 180.0_f64.to_radians();
             let position: f64 = self.distance * rng.gen::<f64>();
 
@@ -91,22 +95,47 @@ impl Experiment {
     }
 }
 
+fn divide_needles(exp : Experiment) -> (i64,i64) {
+    let mut expected_needles = (0, 0);
+
+    if (exp.needles % exp.threads) as i64 != 0 {
+        expected_needles.1 = (exp.needles % exp.threads) as i64;
+    }
+
+    expected_needles.0 = (exp.needles / exp.threads) as i64;
+    
+    return expected_needles;
+}
+
+
+
 
 fn create_threadpool(exp : Experiment) {
-    // We may not need to clone the object here 
-    let cloned = exp.clone();
-    // println!("Length: {}",cloned.length);
-    // println!("Distance: {}",cloned.distance);
-    // println!("Threads: {}",cloned.threads);
-    // println!("Needles: {}",cloned.needles);
-    let pool = ThreadPool::new(cloned.threads as usize);
+
+    let split_needles = divide_needles(exp);
+
+    let mut exp_vec : Vec<Experiment> = Vec::new(); 
+    
+    //iterate through dont worry about remainder 
+    for _ in 0..exp.threads as i64 {
+        let cloned_exp = exp.clone(); 
+        cloned_exp.set_needles(split_needles.0 as f64);
+        exp_vec.push(cloned_exp);
+    }
+
+    // add the raminder to the first element in the vector
+    exp_vec[0].set_needles(exp_vec[0].needles + (split_needles.1 as f64));
+
+    let pool = ThreadPool::new(exp.threads as usize);
 
     let (sender, receiver) = channel();
-    for _ in 0..cloned.needles {
+
+    let size_to_iterate = exp.threads as usize;
+    for i in 0..size_to_iterate  {
         let cloned_sender = sender.clone();
         pool.execute(move|| {
         //println!("I ({:?}) am working on a task: ", thread::current().id());
-        cloned_sender.send(exp.clone().distance).expect("");
+        cloned_sender.send(exp_vec[i].toss_needles()).expect("");
 
     });
     }
@@ -121,16 +150,22 @@ fn create_threadpool(exp : Experiment) {
 ///Main function for our program
 fn main() {
     println!("Buffon's Needle\n");
-    let new_exp = Experiment::new();
+    let main_exp = Experiment::new();
+    create_threadpool(main_exp);
+
 
     // if main is too large create a calc_pi() function
-    let hits  = new_exp.toss_needles();
+    // let hits  = new_exp.toss_needles();
 
-    let misses = new_exp.needles as f64 - hits; 
-    let pi = (2.0 * new_exp.length * (hits + misses)) / (new_exp.distance * hits);
+    // let misses = new_exp.needles as f64 - hits; 
+    // let pi = (2.0 * new_exp.length * (hits + misses)) / (new_exp.distance * hits);
 
-    println!("Number of hits: {}", hits);
-    println!("Number of misses: {}", misses);
-    println!("This is PI: {}", pi);
+    // Create a new threadpool 
+
+    // println!("Number of hits: {}", hits);
+    // println!("Number of misses: {}", misses);
+    // println!("Number total : {}", hits + misses);
+    // println!("This is PI: {}", pi);
     // Print a usage message if the length is greater that distance apart
+
 }
