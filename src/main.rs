@@ -3,11 +3,9 @@ use std::sync::mpsc::channel;//idk if we need this
 use threadpool::ThreadPool; 
 use std::io::{stdin, stdout, Write}; // had to import 'Write' to get flush() working
 use rand::{thread_rng, Rng};
+use std::thread::Thread;
 
-
-
-//remove below derive before submitting
-#[derive(Debug, Clone,Copy)]
+#[derive(Debug, Clone, Copy)]
 struct Experiment {
     length: f64,
     distance: f64,
@@ -65,7 +63,7 @@ impl Experiment {
 
     }
 
-    pub fn set_needles(mut self, value : f64) {
+    pub fn set_needles(&mut self, value : f64) {
         self.needles = value; 
     }
 
@@ -76,7 +74,6 @@ impl Experiment {
     pub fn toss_needles(&self) -> f64{
         // count the number of hits
         let mut count: f64 = 0.0;
-        println!("inside toss_needles()");
         let mut rng = rand::thread_rng();
 
         for _ in 0..self.needles as i64{
@@ -90,12 +87,11 @@ impl Experiment {
                 count += 1.0;
             }
         }
-        println!("toss_needles() is done");
         return count;
     }
 }
 
-fn divide_needles(exp : Experiment) -> (i64,i64) {
+fn divide_needles(exp : Experiment) -> (i64, i64) {
     let mut expected_needles = (0, 0);
 
     if (exp.needles % exp.threads) as i64 != 0 {
@@ -110,62 +106,59 @@ fn divide_needles(exp : Experiment) -> (i64,i64) {
 
 
 
-fn create_threadpool(exp : Experiment) {
+fn create_threadpool(exp: Experiment) -> f64 {
 
     let split_needles = divide_needles(exp);
-
+    println!("needles: {}\nremainder: {}", split_needles.0, split_needles.1);
     let mut exp_vec : Vec<Experiment> = Vec::new(); 
-    
-    //iterate through dont worry about remainder 
-    for _ in 0..exp.threads as i64 {
-        let cloned_exp = exp.clone(); 
-        cloned_exp.set_needles(split_needles.0 as f64);
+
+    //iterate through dont worry about remainder
+    for i in 0..exp.threads as i64 {
+        let mut cloned_exp = exp.clone();
+        if i == 0 {
+            cloned_exp.set_needles((split_needles.0 as f64) + (split_needles.1 as f64))
+        }else {
+            cloned_exp.set_needles(split_needles.0 as f64);
+        }
         exp_vec.push(cloned_exp);
     }
 
-    // add the raminder to the first element in the vector
-    exp_vec[0].set_needles(exp_vec[0].needles + (split_needles.1 as f64));
-
-    let pool = ThreadPool::new(exp.threads as usize);
+    //sets max to 200, doesn't actually do 200 threads
+    let pool = ThreadPool::new(200 as usize);
 
     let (sender, receiver) = channel();
 
     let size_to_iterate = exp.threads as usize;
     for i in 0..size_to_iterate  {
         let cloned_sender = sender.clone();
+        let temp = exp_vec[i];
         pool.execute(move|| {
-        //println!("I ({:?}) am working on a task: ", thread::current().id());
-        cloned_sender.send(exp_vec[i].toss_needles()).expect("");
-
-    });
+            //println!("I ({:?}) am working on a task: ", thread::current().id());
+            cloned_sender.send(temp.toss_needles()).expect("");
+        });
     }
     drop(sender);
 
-    // This is where the main thread gets acces to the data 
+    // This is where the main thread gets acces to the data
+    let mut total = 0.0;
     for element in receiver {
-        println!("{}", element);
+        //println!("Hits: {}", element);
+        total += element;
     }
+    println!("total hits: {}", total);
+    return total;
 }
 
 ///Main function for our program
 fn main() {
     println!("Buffon's Needle\n");
     let main_exp = Experiment::new();
-    create_threadpool(main_exp);
 
+    let hits  = create_threadpool(main_exp);
+    let misses = main_exp.needles as f64 - hits;
 
-    // if main is too large create a calc_pi() function
-    // let hits  = new_exp.toss_needles();
+    let pi = (2.0 * main_exp.length * (hits + misses)) / (main_exp.distance * hits);
 
-    // let misses = new_exp.needles as f64 - hits; 
-    // let pi = (2.0 * new_exp.length * (hits + misses)) / (new_exp.distance * hits);
-
-    // Create a new threadpool 
-
-    // println!("Number of hits: {}", hits);
-    // println!("Number of misses: {}", misses);
-    // println!("Number total : {}", hits + misses);
-    // println!("This is PI: {}", pi);
-    // Print a usage message if the length is greater that distance apart
+    println!("This is PI: {}", pi);
 
 }
