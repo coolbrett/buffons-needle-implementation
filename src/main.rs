@@ -1,13 +1,12 @@
-//! main.rs - The driver that runs a multithreaded implementation of Buffon's needle 
+//! main.rs - The driver that runs a multi-threaded implementation of Buffon's needle
 //! 
-//! # Atrributes 
+//! # Attributes
 //!
 //! ** Authors ** Fernando Rodriguez and Brett Dale
 //! ** Version ** April 21st 2021
 pub mod lib;
 use std::sync::mpsc::channel;
-//use std::thread; //uncomment to be able to print the ID in the threadpool
-use threadpool::ThreadPool; 
+use threadpool::ThreadPool;
 use crate::lib::Experiment; 
 
 
@@ -41,11 +40,11 @@ fn divide_needles(exp : Experiment) -> (i64, i64) {
 /// 
 /// # Returns 
 /// 'total' - The total number of hits calculated by all the threads
-fn create_threadpool(exp: Experiment) -> f64 {
+fn create_threadpool(exp: Experiment) -> i64 {
 
     // we divide the needles up for the new objects
     let split_needles = divide_needles(exp);
-    println!("needles: {}\nremainder: {}", split_needles.0, split_needles.1);
+    //println!("needles: {}\nremainder: {}", split_needles.0, split_needles.1);
 
     // a vector that will hold all the new Experiments with a new needle amount
     let mut exp_vec : Vec<Experiment> = Vec::new(); 
@@ -54,9 +53,9 @@ fn create_threadpool(exp: Experiment) -> f64 {
     for i in 0..exp.get_threads() as i64 {
         let mut cloned_exp = exp.clone();
         if i == 0 {
-            cloned_exp.set_needles((split_needles.0 as f64) + (split_needles.1 as f64))
+            cloned_exp.set_needles((split_needles.0) + (split_needles.1))
         }else {
-            cloned_exp.set_needles(split_needles.0 as f64);
+            cloned_exp.set_needles(split_needles.0);
         }
         exp_vec.push(cloned_exp);
     }
@@ -79,13 +78,13 @@ fn create_threadpool(exp: Experiment) -> f64 {
     // drop the sender so the program does not keep waiting for more messages
     drop(sender);
 
-    // This is where the main thread gets acces to the data
-    let mut total = 0.0;
+    // This is where the main thread gets access to the data
+    let mut total = 0;
     for element in receiver {
         //println!("Hits: {}", element);
         total += element;
     }
-    println!("total hits: {}", total);
+    println!("Total hits: {}", total);
     return total;
 }
 
@@ -93,11 +92,15 @@ fn create_threadpool(exp: Experiment) -> f64 {
 fn main() {
     println!("Buffon's Needle\n");
     let main_exp = Experiment::new();
-
+    println!("Current Configuration:");
+    println!("Length of needle: {}", main_exp.get_length());
+    println!("Distance between lines: {}", main_exp.get_distance());
+    println!("Number of needles to drop overall: {}", main_exp.get_needles());
+    println!("Number of threads: {}", main_exp.get_threads());
     let hits  = create_threadpool(main_exp);
     let misses = main_exp.get_needles() - hits;
 
-    let pi = (2.0 * main_exp.get_length() * (hits + misses)) / (main_exp.get_distance() * hits);
+    let pi = (2.0 * main_exp.get_length() * (hits + misses) as f64)/(main_exp.get_distance() * hits as f64);
 
-    println!("This is PI: {}", pi);
+    println!("\npi = {}", pi);
 }

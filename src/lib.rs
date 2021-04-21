@@ -5,7 +5,8 @@
 //! ** Authors ** Fernando Rodriguez and Brett Dale 
 //! ** Version ** April 21st 2021 
 use std::io::{stdin, stdout, Write};
-use rand::{thread_rng, Rng}; //TODO: Figure out why this wont stop giving a warning 
+use rand::{thread_rng, Rng};
+use std::process::exit;
 
 // A struct that represents an Experiment
 #[derive(Debug, Clone, Copy)]
@@ -15,9 +16,9 @@ pub struct Experiment {
     // the distance between the lines
     distance: f64,
     // the number of needles to toss for the experiment
-    needles: f64,
+    needles: i64,
     // the number of threads to use 
-    threads: f64
+    threads: i64
 }
 
 // Implement associated methods for Experiment
@@ -33,9 +34,16 @@ impl Experiment {
         // Gets the length of the needle 
         print!("Enter the needle length > ");
         stdout().flush().expect("Failed to flush stdout");
-        stdin().read_line(&mut length_buffer).expect("Failed to read user input");
+        stdin().read_line(&mut length_buffer).
+            expect("Failed to read user input");
 
-        let parsed_length = length_buffer.trim().parse::<f64>().expect("Failed to parse input");
+        let parsed_length = length_buffer.trim().parse::<f64>().
+            expect("Cannot parse input that is not numerical");
+
+        if parsed_length < 0.0 {
+            println!("Length can not be negative!");
+            exit(2);
+        }
 
         // Gets the distance between needles 
         print!("Enter the distance between the lines > ");
@@ -43,7 +51,18 @@ impl Experiment {
 
         stdin().read_line(&mut distance_buffer).expect("Failed to read user input");
 
-        let parsed_distance = distance_buffer.trim().parse::<f64>().expect("Failed to parse input");
+        let parsed_distance = distance_buffer.trim().parse::<f64>().
+            expect("Cannot parse input that is not numerical");
+
+        if parsed_distance < 0.0 {
+            println!("Distance can not be negative!");
+            exit(2);
+        }
+
+        if parsed_length >= parsed_distance {
+            println!("\nNeedle length must be less than distance! Re-run the program to try again");
+            exit(1);
+        }
 
         // Gets the number of needles 
         print!("Enter the number of needles to drop overall > ");
@@ -51,7 +70,13 @@ impl Experiment {
 
         stdin().read_line(&mut needles_buffer).expect("Failed to read user input");
 
-        let parsed_needles = needles_buffer.trim().parse::<f64>().expect("Failed to parse input");
+        let parsed_needles = needles_buffer.trim().parse::<i64>().
+            expect("Cannot parse input that is not numerical");
+
+        if parsed_needles < 0 {
+            println!("Needle count can not be negative!");
+            exit(2);
+        }
 
         // Gets the number of threads to use
         print!("Enter the number of threads to use > ");
@@ -59,7 +84,13 @@ impl Experiment {
 
         stdin().read_line(&mut threads_buffer).expect("Failed to read user input");
 
-        let parsed_threads = threads_buffer.trim().parse::<f64>().expect("Failed to parse input");
+        let parsed_threads = threads_buffer.trim().parse::<i64>().
+            expect("Cannot parse input that is not numerical");
+
+        if parsed_threads < 0 {
+            println!("Threads can not be negative!");
+            exit(2);
+        }
 
         // set the parsed values to an Experiment 
         Experiment {
@@ -74,7 +105,7 @@ impl Experiment {
     /// 
     /// # Returns 
     /// &self.needles - a reference to the number of needles
-    pub fn get_needles(&self) -> &f64 {
+    pub fn get_needles(&self) -> &i64 {
         return &self.needles;
     }
 
@@ -98,7 +129,7 @@ impl Experiment {
     /// 
     /// # Returns 
     /// self.threads - the number of threads
-    pub fn get_threads(&self) -> f64 {
+    pub fn get_threads(&self) -> i64 {
         return self.threads;
     }
 
@@ -106,7 +137,7 @@ impl Experiment {
     /// 
     /// # Arguments
     /// 'value' - the value to set for the number of needles 
-    pub fn set_needles(&mut self, value : f64) {
+    pub fn set_needles(&mut self, value : i64) {
         self.needles = value; 
     }
 
@@ -114,10 +145,10 @@ impl Experiment {
     ///
     /// # Returns
     /// f64 representing the amount of hits
-    pub fn toss_needles(&self) -> f64{
+    pub fn toss_needles(&self) -> i64{
         // count the number of hits
-        let mut count: f64 = 0.0;
-        let mut rng = rand::thread_rng();
+        let mut count: i64 = 0;
+        let mut rng = thread_rng();
 
         for _ in 0..self.needles as i64{
             let angle: f64 = rng.gen::<f64>() * 180.0_f64.to_radians();
@@ -127,7 +158,7 @@ impl Experiment {
                 && (0.5 * (position - self.length * angle.sin()) <= self.distance)
                 || (0.5 * (position + self.length * angle.sin()) >= 0.0)
                 && ( 0.5 * (position - self.length * angle.sin()) <= 0.0) {
-                count += 1.0;
+                count += 1;
             }
         }
         return count;
